@@ -1,1 +1,5 @@
 __pycache__/
+glove_vectors
+tfidf_w2v_vector_glove.pkl
+tfidf_w2v_vectors_gensim_final.pkl
+X_train.pkl
