@@ -11,6 +11,8 @@ import gensim
 import smart_open
 import warnings
 import input_pre_processing
+import requests
+import json
 warnings.filterwarnings('ignore')
 
 
@@ -79,17 +81,20 @@ def preprocess_title(text):
 # load train data
 # X_train_limited.cvs trained file dataset.
 # X_train = pd.read_csv('X_train.csv')
-X_train = joblib.load('X_train.pkl')
+X_train = joblib.load('X_train_final_V2.pkl')
 print('X_train Loaded') 
 # trained gensim w2v model on train data
 #tfidf_w2v_vectors_gensim = joblib.load('gensim_tfidf_w2v_vectors_limited.pkl')
+# pretrain_data_all -> joblib_dumps_glove_model -> tfidf_w2v_vector_glove
 tfidf_w2v_vectors_glove = joblib.load('tfidf_w2v_vector_glove.pkl')
 
 print('tfidf_w2v_vectors_gensim loaded')
 # Dictionary of words and idf value
+# pretrain_data_all -> joblib_dumps_glove_model -> tfidf1
 tfidf_gensim = joblib.load('tfidf1_final.pkl')
 print('tfidf_gensim Loaded')
 # trained w2v model using gensim
+# pretrain_data_all -> joblib_dumps -> gensim_w2v_model 
 w2v_model_gensim = joblib.load('gensim_w2v_model_final.pkl')
 print(type(w2v_model_gensim))
 print('w2v_model_gensim loaded')
@@ -105,6 +110,53 @@ with open('glove_vectors', 'rb') as f:
     model = pickle.load(f)
     glove_words = set(model.keys())
 
+
+######################################### deepseek generate answer ##################################################
+import requests
+import json
+
+def generate_answer_from_dictt(dictt, user_question):
+    
+    # Extract relevant answers
+    related_answers = []
+    for item in dictt["top_10"][:3]:
+        answer_text = item["answers"][0]  # Get the highest-voted answer
+        related_answers.append(answer_text)
+
+    context = "\n###".join(related_answers)
+
+    # Create a prompt for AI model
+    prompt = f"""You are an AI assistant specializing in analyzing Stack Overflow answers.
+The user asks: "{user_question}"
+
+Here are some related answers:
+{context}
+
+Please summarize and provide only the most accurate, concise, and easy-to-understand answer in HTML format.
+"""
+
+    print("prompt: ", prompt)
+    url = "http://localhost:11434/api/generate"
+    payload = {
+        "model": "openchat",
+        "prompt": prompt,
+        "stream": False
+    }
+
+    response = requests.post(url, json=payload)
+    if response.status_code == 200:
+        return response.json()["response"]
+    else:
+        return "<p><strong>Error:</strong> Unable to generate an answer.</p>"
+
+# Example usage
+# user_question = "How to fix Java runtime errors?"
+# generated_html = generate_answer_from_dictt(dictt, user_question)
+
+# # Output result for rendering on a webpage
+# print(generated_html)
+
+# print(generate_answer(question, answers))
 
 ######################################### route paths ##################################################
 
@@ -129,9 +181,9 @@ def final_func(top_n=10):
     # get text from user
     to_predict_list = request.form.to_dict()
     # preprocess question
-    # text = preprocess_title(to_predict_list['user_question'])
+    text = preprocess_title(to_predict_list['user_question'])
     # text = input_pre_processing.generate_search_query(to_predict_list['user_question'])
-    text = preprocess_title(text)
+    # text = preprocess_title(text)
     print("text input: ", text)
     #splitting the sentence
     text_list = list(text.split())
@@ -161,44 +213,74 @@ def final_func(top_n=10):
     # print top similarity values
     print('Top cosine similarities are ======>',similarities[0][top_similarity_index])
     similar_questions_title = X_train['title'][top_similarity_index]
-    similar_answers = X_train['preprocessed_answer'][top_similarity_index]
+    # similar_answers = X_train['preprocessed_answer'][top_similarity_index]
+    similar_raw_answers = X_train['answer'][top_similarity_index]
+    similar_raw_score = X_train['score'][top_similarity_index]
     base_url = "https://stackoverflow.com/questions/"
     similar_questions_url = [f"{base_url}{qid}" for qid in X_train['id'][top_similarity_index]]
     
     
-    # add log to file dataset
-    data = {
-        'input': to_predict_list['user_question'],
-        'title': similar_questions_title,
-        'answers': similar_answers,
-        'url': similar_questions_url
-    }
-    df = pd.DataFrame(data)
-    log_file = 'model1_logs.csv'
+    # # add log to file dataset
+    # data = {
+    #     'input': to_predict_list['user_question'],
+    #     'title': similar_questions_title,
+    #     'answers': similar_raw_answers,
+    #     'url': similar_questions_url
+    # }
+    # df = pd.DataFrame(data)
+    # log_file = 'model1_logs.csv'
 
     # Kiểm tra nếu file tồn tại và có dữ liệu
-    if os.path.exists(log_file) and os.path.getsize(log_file) > 0:
-        try:
-            existing_df = pd.read_csv(log_file)
-            updated_df = pd.concat([existing_df, df], ignore_index=True)
-        except pd.errors.EmptyDataError:
-            updated_df = df  # Nếu file bị rỗng, ghi lại từ đầu
-    else:
-        updated_df = df
+    # if os.path.exists(log_file) and os.path.getsize(log_file) > 0:
+    #     try:
+    #         existing_df = pd.read_csv(log_file)
+    #         updated_df = pd.concat([existing_df, df], ignore_index=True)
+    #     except pd.errors.EmptyDataError:
+    #         updated_df = df  # Nếu file bị rỗng, ghi lại từ đầu
+    # else:
+    #     updated_df = df
 
     # Luôn luôn ghi lại dữ liệu sau khi cập nhật
-    updated_df.to_csv(log_file, index=False)
-    print(f"Data saved to {log_file}")
+    # updated_df.to_csv(log_file, index=False)
+    # print(f"Data saved to {log_file}")
+
+    dictt = {'top_10': []}
+
+    for title, url, raw_answers, raw_scores in zip(similar_questions_title, similar_questions_url, similar_raw_answers, similar_raw_score):
+        answer_list = raw_answers.split('@@@') if isinstance(raw_answers, str) else []
+        
+        score_list = raw_scores.split('|') if isinstance(raw_scores, str) else []
+
+        try:
+            score_list = list(map(int, score_list))
+        except ValueError:
+            score_list = [int(s) if s.isdigit() else 0 for s in score_list]
+        
+         # Chỉ lấy answer có score cao nhất
+        if answer_list and score_list:
+            max_index = score_list.index(max(score_list))
+            best_answer = (answer_list[max_index], score_list[max_index]) 
+        else:
+            best_answer = ("No valid answer", 0)
+        # answer_score_pairs = list(zip(answer_list, score_list)) if len(answer_list) == len(score_list) else list(zip(answer_list[:len(score_list)], score_list[:len(answer_list)]))
+
+        dictt['top_10'].append({
+            'title': title,
+            'url': url,
+            'answers': best_answer  # Danh sách (answer, score)
+        })
 
 
-
+    final_generated_answer = generate_answer_from_dictt(dictt, to_predict_list['user_question'])
+    print('Final answer: ', final_generated_answer)
     # similar_questions_url = X_train['id'][top_similarity_index]
     total_time = (time.time() - start)
     print('\t')
     print('Total time ===========> ',total_time)
-    dictt = {'top_10' : list(zip(similar_questions_title,similar_questions_url))}
+    # dictt = {'top_10' : list(zip(similar_questions_title,similar_questions_url, similar_raw_answers))}
+    print(json.dumps(dictt, indent=4, ensure_ascii=False))
     #return jsonify({'Top 10 Similar questions using gensim w2v': list(zip(similar_questions_title,similar_questions_url))})
-    return flask.render_template('response.html',res = dictt )
+    return flask.render_template('response.html',res = dictt, final_answer=final_generated_answer )
 
 
 if __name__ == '__main__':

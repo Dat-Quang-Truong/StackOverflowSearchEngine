@@ -1,14 +1,152 @@
-<html>
+<html lang="en">
 <head>
-<title>Stack overflow semantic search</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stack Overflow Semantic Search</title>
+    <style>
+        body {
+            background-color: #F5FFFA;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            text-align: center;
+        }
+
+        h2 {
+            color: #2C3E50;
+            margin-bottom: 20px;
+        }
+
+        /* Container chứa cả Answer và List */
+        .content-container {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            gap: 20px;
+            max-width: 1200px;
+            margin: auto;
+        }
+
+        /* Answer giữ nguyên kích thước, nằm bên trái */
+        .answer-container {
+            background: #ffffff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+            text-align: left;
+            width: 70%;
+            min-height: 300px;
+        }
+
+        .answer-container h1 {
+            font-size: 22px;
+            color: #1E8449;
+            border-bottom: 2px solid #1E8449;
+            padding-bottom: 5px;
+            margin-bottom: 15px;
+        }
+
+        .answer-container p {
+            font-size: 16px;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .answer-container a {
+            color: #007BFF;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .answer-container a:hover {
+            text-decoration: underline;
+            color: #0056b3;
+        }
+
+        /* Danh sách Top 10 Results nằm bên phải */
+        .results-container {
+            background: #ffffff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+            text-align: left;
+            width: 30%;
+            min-height: 300px;
+            overflow-y: auto; /* Cho phép cuộn nếu danh sách dài */
+        }
+
+        .results-container ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        .results-container li {
+            background: #ecf0f1;
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 8px;
+            transition: 0.3s ease-in-out;
+        }
+
+        .results-container li:hover {
+            background: #d5dbdb;
+        }
+
+        .results-container li a {
+            text-decoration: none;
+            color: #2C3E50;
+            font-weight: bold;
+        }
+
+        .results-container li a:hover {
+            color: #2980B9;
+        }
+
+        /* Responsive: Chia layout dọc khi màn hình nhỏ */
+        @media screen and (max-width: 768px) {
+            .content-container {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .answer-container,
+            .results-container {
+                width: 90%;
+            }
+        }
+    </style>
 </head>
-<body style="background-color:#F5FFFA;">
-<center><h2> Top 10 most similar results </h2></center>
-<ul>
-  {% for name in res.top_10 %}
-  <li> <a href = {{name[1]}}> {{name[0]}}</a> </li>
-  <br>
-  {% endfor %}
-</ul>
+<body>
+
+    <h2>Most Similar Results</h2>
+
+    <div class="content-container">
+        <!-- Answer bên trái -->
+        <div class="answer-container">
+            <h1>Most Relevant Answers</h1>
+            <div>
+                {% for item in res.top_10[:3] %}
+                    <p><strong>Answer {{ loop.index }}:</strong> {{ item.answers[0] | safe }}</p>
+                {% endfor %}
+            </div>
+            <h1>Summary Answers</h1>
+            <div>
+                <p>{{final_answer | safe}}</p>
+            </div>
+        </div>
+
+        <!-- Danh sách kết quả bên phải -->
+        <div class="results-container">
+            <h2>Related Questions</h2>
+            <ul>
+                {% for name in res.top_10 %}
+                <li>
+                    <a href="{{ name.url }}">{{ name.title }}</a>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+
 </body>
 </html>
