@@ -6,9 +6,10 @@
 <style>
 html, body {
   height:100%;
-  background-image: url('https://png.pngtree.com/png-vector/20190802/ourlarge/pngtree-stackoverflow-icon-design-vector-png-image_1644138.jpg');
-background-repeat:no-repeat;
-background-size:cover;
+  background-image: url('stackoverflow-logo-1536x1024.png');
+  background-repeat:no-repeat;
+  background-size:cover;
+  background-color: #F5FFFA;
 }
 
 .well {
@@ -21,6 +22,7 @@ background-size:cover;
 
 .search-form {
   border-radius: 30px 0 0 30px;
+  background-color: #fff; /* Nền trắng để nổi bật */
 }
 
 .input-group {
@@ -32,19 +34,51 @@ input-group-btn {
 }
 
 #search {
-  border: 1px;
+  font-weight: 600; /* Chữ trong input đậm hơn */
+  border: 3px solid #000 !important; /* Áp dụng viền đen trực tiếp */
+  /* border-right: none !important; Bỏ viền phải để không trùng với nút */
+  border-radius: 30px 0 0 30px !important;
+  height: 38px; /* Đặt chiều cao cố định cho input */
+}
+
+#search::placeholder {
+  font-weight: 600; /* Chữ placeholder đậm hơn */
+  color: #333333; /* Màu chữ placeholder đậm hơn */
 }
 
 .search-btn {
   cursor:pointer;
-  border-radius: 0 30px 30px 0; 
-  background-color:#fff;
-  color:#669;
-  
+  border-radius: 0 30px 30px 0;
+  border: 3px solid #000; /* Viền đen cho nút */
+  /* border-left: none; Bỏ viền trái để không trùng với input */
+  background-color: #ff6200; /* Màu cam Stack Overflow */
+  color: #fff; /* Màu biểu tượng tìm kiếm thành trắng */
+  height: 38px; /* Đặt chiều cao cố định cho nút, khớp với input */
+  padding: 0 10px; /* Điều chỉnh padding để căn giữa biểu tượng */
+  line-height: 34px; /* Đảm bảo biểu tượng căn giữa theo chiều dọc */
+}
+
+.search-btn i {
+  color: #fff; /* Đảm bảo biểu tượng tìm kiếm là màu trắng */
+}
+
+/* Ghi đè CSS của Bootstrap */
+.input-group .form-control {
+  border: 2px solid #000 !important; /* Áp dụng viền đen trực tiếp cho input */
+  border-right: none !important; /* Bỏ viền phải để không trùng với nút */
+  border-radius: 30px 0 0 30px !important;
+  height: 38px; /* Đặt chiều cao cố định */
+}
+
+.input-group .search-btn {
+  border: 3px solid #000; /* Áp dụng lại viền đen cho nút */
+  /* border-left: none; Bỏ viền trái của nút */
+  border-radius: 0 30px 30px 0;
+  height: 38px; /* Đặt chiều cao cố định */
 }
 
 .text-center {
-  color: #fff;
+  color: #060606;
 }
 </style>
 </head>
@@ -56,13 +90,12 @@ input-group-btn {
           <div class="input-group">
             <input type='text' id='search' class="form-control search-form" name="user_question" placeholder="Search here">
             <span class="input-group-btn" style="width:39px">
-              <button id="search-this"type="submit" class="pull-right btn btn-default search-btn">
+              <button id="search-this" type="submit" class="pull-right btn btn-default search-btn">
                   <i class="fa fa-search"></i>
               </button>
             </span>
           </div>
         </form>
-        
     </div>
   </div>
 </body>

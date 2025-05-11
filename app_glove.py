@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, Response, stream_with_context
 import numpy as np
 import pandas as pd
 import re
@@ -10,11 +10,12 @@ import os
 import gensim
 import smart_open
 import warnings
-import input_pre_processing
 import requests
 import json
 warnings.filterwarnings('ignore')
 
+current_dict = None
+current_user_question = None
 
 
 # create app
@@ -115,48 +116,42 @@ with open('glove_vectors', 'rb') as f:
 import requests
 import json
 
-def generate_answer_from_dictt(dictt, user_question):
+# def generate_answer_from_dictt(dictt, user_question):
     
-    # Extract relevant answers
-    related_answers = []
-    for item in dictt["top_10"][:3]:
-        answer_text = item["answers"][0]  # Get the highest-voted answer
-        related_answers.append(answer_text)
+#     # Extract relevant answers
+#     related_answers = []
+#     for item in dictt["top_10"][:3]:
+#         answer_text = item["answers"][0]  # Get the highest-voted answer
+#         related_answers.append(answer_text)
 
-    context = "\n###".join(related_answers)
+#     context = "\n###".join(related_answers)
 
-    # Create a prompt for AI model
-    prompt = f"""You are an AI assistant specializing in analyzing Stack Overflow answers.
-The user asks: "{user_question}"
+#     # Create a prompt for AI model
+#     prompt = f"""You are an AI assistant specializing in analyzing Stack Overflow answers.
+# The user asks: "{user_question}"
 
-Here are some related answers:
-{context}
+# Here are some related answers:
+# {context}
 
-Please summarize and provide only the most accurate, concise, and easy-to-understand answer in HTML format.
-"""
+# Please summarize and provide only the most accurate, concise, and easy-to-understand answer in HTML format.
+# """
 
-    print("prompt: ", prompt)
-    url = "http://localhost:11434/api/generate"
-    payload = {
-        "model": "openchat",
-        "prompt": prompt,
-        "stream": False
-    }
+#     print("prompt: ", prompt)
+#     url = "http://localhost:11434/api/generate"
+#     payload = {
+#         "model": "openchat",
+#         "prompt": prompt,
+#         "stream": True
+#     }
 
-    response = requests.post(url, json=payload)
-    if response.status_code == 200:
-        return response.json()["response"]
-    else:
-        return "<p><strong>Error:</strong> Unable to generate an answer.</p>"
-
-# Example usage
-# user_question = "How to fix Java runtime errors?"
-# generated_html = generate_answer_from_dictt(dictt, user_question)
-
-# # Output result for rendering on a webpage
-# print(generated_html)
-
-# print(generate_answer(question, answers))
+#     with requests.post(url, json=payload, stream=True) as response:
+#         for line in response.iter_lines():
+#             if line:
+#                 try:
+#                     json_data = json.loads(line.decode("utf-8"))
+#                     yield json_data["response"]
+#                 except:
+#                     yield "[Error parsing response]"
 
 ######################################### route paths ##################################################
 
@@ -174,6 +169,10 @@ def index():
 def final_func(top_n=10):
     ''' This function will find top similar result for given query using gensim w2v'''
     start = time.time()
+
+    # initialize global variables for generate answer
+    global current_dict, current_user_question
+
     # initialize  vector for user query
     main_vec = np.zeros(300)
     # initialize tfidf weight
@@ -219,30 +218,6 @@ def final_func(top_n=10):
     base_url = "https://stackoverflow.com/questions/"
     similar_questions_url = [f"{base_url}{qid}" for qid in X_train['id'][top_similarity_index]]
     
-    
-    # # add log to file dataset
-    # data = {
-    #     'input': to_predict_list['user_question'],
-    #     'title': similar_questions_title,
-    #     'answers': similar_raw_answers,
-    #     'url': similar_questions_url
-    # }
-    # df = pd.DataFrame(data)
-    # log_file = 'model1_logs.csv'
-
-    # Kiểm tra nếu file tồn tại và có dữ liệu
-    # if os.path.exists(log_file) and os.path.getsize(log_file) > 0:
-    #     try:
-    #         existing_df = pd.read_csv(log_file)
-    #         updated_df = pd.concat([existing_df, df], ignore_index=True)
-    #     except pd.errors.EmptyDataError:
-    #         updated_df = df  # Nếu file bị rỗng, ghi lại từ đầu
-    # else:
-    #     updated_df = df
-
-    # Luôn luôn ghi lại dữ liệu sau khi cập nhật
-    # updated_df.to_csv(log_file, index=False)
-    # print(f"Data saved to {log_file}")
 
     dictt = {'top_10': []}
 
@@ -270,17 +245,67 @@ def final_func(top_n=10):
             'answers': best_answer  # Danh sách (answer, score)
         })
 
-
-    final_generated_answer = generate_answer_from_dictt(dictt, to_predict_list['user_question'])
-    print('Final answer: ', final_generated_answer)
-    # similar_questions_url = X_train['id'][top_similarity_index]
     total_time = (time.time() - start)
     print('\t')
     print('Total time ===========> ',total_time)
     # dictt = {'top_10' : list(zip(similar_questions_title,similar_questions_url, similar_raw_answers))}
     print(json.dumps(dictt, indent=4, ensure_ascii=False))
-    #return jsonify({'Top 10 Similar questions using gensim w2v': list(zip(similar_questions_title,similar_questions_url))})
-    return flask.render_template('response.html',res = dictt, final_answer=final_generated_answer )
+
+
+    current_dict = dictt
+    current_user_question = to_predict_list['user_question']
+    return flask.render_template("response.html", res=dictt, final_answer="", question=to_predict_list['user_question'])
+
+
+@app.route('/stream')
+def stream():
+    global current_dict, current_user_question
+    def generate_answer_from_dictt(dictt, user_question):
+        if current_dict is None or current_user_question is None:
+            yield "data: Error: No data available\n\n"
+            return
+        related_answers = []
+        for item in dictt["top_10"][:3]:
+            answer_text = item["answers"][0]
+            related_answers.append(answer_text)
+
+        context = "\n###".join(related_answers)
+
+        prompt = f"""You are an AI assistant specializing in analyzing Stack Overflow answers.
+The user asks: "{user_question}"
+
+Here are some related answers:
+{context}
+
+Please summarize and provide only the most accurate, concise, and easy-to-understand answer in HTML format.
+"""
+
+        print("prompt: ", prompt)
+        url = "http://localhost:11434/api/generate"
+        payload = {
+            "model": "openchat:latest",
+            "prompt": prompt,
+            "stream": True
+        }
+
+        accumulated_text = ""
+        token_count = 0
+
+        with requests.post(url, json=payload, stream=True) as response:
+            for line in response.iter_lines():
+                if line:
+                    try:
+                       
+                        json_data = json.loads(line.decode("utf-8"))
+                        token = json_data['response']
+                        # Gửi token trực tiếp mà không bọc trong JSON.dumps()
+                        yield f"data: {token}\n\n"
+                    except:
+                        yield "data: [Error parsing response]\n\n"
+
+
+    return Response(stream_with_context(generate_answer_from_dictt(current_dict, current_user_question)), 
+                    content_type='text/event-stream')
 
 
 if __name__ == '__main__':

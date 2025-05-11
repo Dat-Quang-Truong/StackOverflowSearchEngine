@@ -3,3 +3,7 @@ glove_vectors
 tfidf_w2v_vector_glove.pkl
 tfidf_w2v_vectors_gensim_final.pkl
 X_train.pkl
+
+X_train_final.pkl
+X_train_final_V2.pkl
+gensim_w2v_model_final.pkl

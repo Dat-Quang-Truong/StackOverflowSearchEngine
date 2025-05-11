@@ -102,6 +102,21 @@
             color: #2980B9;
         }
 
+        pre {
+        white-space: pre-wrap;       /* Tự động xuống dòng nếu dài */
+        word-wrap: break-word;       /* Bẻ từ nếu quá dài */
+        overflow-x: auto;            /* Cho cuộn ngang nếu vẫn tràn */
+        background-color: #f0f0f0;
+        padding: 10px;
+        border-radius: 8px;
+        max-width: 100%;             /* Không tràn ra ngoài container */
+        box-sizing: border-box;
+        }
+        code {
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }   
+
         /* Responsive: Chia layout dọc khi màn hình nhỏ */
         @media screen and (max-width: 768px) {
             .content-container {
@@ -123,15 +138,31 @@
     <div class="content-container">
         <!-- Answer bên trái -->
         <div class="answer-container">
+            <h1>Summary Answers</h1>
+            <div>
+                <div id="loading-indicator" class="loading">Generating answer, please wait...</div>
+                <div id="summary-answer"></div>
+                <!-- <script>
+                    // Lắng nghe dữ liệu streaming
+                    const eventSource = new EventSource("/predict");
+            
+                    eventSource.onmessage = function(event) {
+                        document.getElementById("final_answer").innerHTML += event.data + "<br>";
+                    };
+            
+                    eventSource.onerror = function(event) {
+                        console.error("Error receiving streamed data");
+                        eventSource.close();
+                    };
+                </script> -->
+                <p>{{final_answer | safe}}</p>
+            </div>
+
             <h1>Most Relevant Answers</h1>
             <div>
                 {% for item in res.top_10[:3] %}
                     <p><strong>Answer {{ loop.index }}:</strong> {{ item.answers[0] | safe }}</p>
                 {% endfor %}
-            </div>
-            <h1>Summary Answers</h1>
-            <div>
-                <p>{{final_answer | safe}}</p>
             </div>
         </div>
 
@@ -147,6 +178,40 @@
             </ul>
         </div>
     </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const source = new EventSource('/stream');
+            let responseText = '';
 
+            source.onmessage = function(event) {
+                responseText += event.data;
+                const formattedResponse = formatCodeBlocks(responseText);
+                document.getElementById('summary-answer').innerHTML = formattedResponse;
+                document.getElementById('loading-indicator').style.display = 'none';
+            };
+
+            source.onerror = function(e) {
+                console.log('EventSource failed:', e);
+                // document.getElementById('loading-indicator').innerHTML = 'Error when generating summary answer.';
+                // document.getElementById('loading-indicator').style.display = 'block';
+                source.close();
+            };
+
+             // Hàm để định dạng code blocks
+            function formatCodeBlocks(text) {
+                // Kiểm tra và định dạng các code blocks
+                let formatted = text;
+                
+                // Tìm và bọc code blocks
+                formatted = formatted.replace(/```(\w+)?([\s\S]*?)```/g, function(match, lang, code) {
+                    lang = lang || '';
+                    // Định dạng code với các thẻ pre và code
+                    return `<pre><code class="language-${lang}">${code}</code></pre>`;
+                });
+                
+                return formatted;
+            }
+        });
+    </script>
 </body>
 </html>
