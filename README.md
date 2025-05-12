@@ -1,27 +1,17 @@
 # Stack-overflow-semantic-search-engine
 
-**1. The problem statement**
+**1. Mô tả bài toán**
 
-In this project i have to develop stack overflow search engine based on semantic meaning so when user search any question on search engine then it should give relevant and and semantically most similar results
+Trong dự án này, khóa luận phát triển một công cụ tìm kiếm cho Stack Overflow dựa trên ý nghĩa ngữ nghĩa. Khi người dùng tìm kiếm bất kỳ câu hỏi nào trên công cụ tìm kiếm này, nó sẽ trả về những kết quả có liên quan và mang ý nghĩa ngữ nghĩa gần nhất cùng với xử lý bộ câu trả lời đầu ra tương ứng.
 
-**2. Business Problem**
+**2. Vấn đề**
 
-StackOverflow has a huge amount of data due to which it’s difficult to search for a solution because when we search any on stack overflow then it gives results based on keyword we have used . It’s not hard to get desired results for a programmer guy because he/she knows technical terms but for a non programmer guy this poses a great concern. Objective of this project is to understand the content of what the user is trying to search for and then return most similar results based on semantic meaning. The idea is to represent question in vector space and compare question based on similarity or distance between these features.
+Stack Overflow có một lượng dữ liệu khổng lồ, khiến việc tìm kiếm giải pháp trở nên khó khăn. Khi người dùng tìm kiếm trên Stack Overflow, các kết quả trả về thường dựa trên từ khóa mà họ sử dụng. Mục tiêu của dự án là hiểu nội dung mà người dùng muốn tìm kiếm và sau đó trả về những kết quả gần nhất dựa trên ý nghĩa ngữ nghĩa. Ý tưởng là biểu diễn các câu hỏi trong không gian véc-tơ và so sánh chúng dựa trên mức độ tương đồng hoặc khoảng cách giữa các đặc trưng đó. Sau khi tìm kiếm được bộ câu hỏi - câu trả lời tương đương về mặt ngữ nghĩa, khóa luận tiến hành xử lý tổng hợp dữ liệu để trả về câu trả lời đầu ra ngắn gọn nhất.
 
-**3 Business Constraints**
+**3. Bài toán Machine Learning**
 
-  1. Low latency Requirement.
-  2. Search engine should display Most relevant result.
+Khóa luận xây dựng một công cụ tìm kiếm dựa trên ý nghĩa ngữ nghĩa của nội dung và hiển thị kết quả bộ câu hỏi liên kết với bài đăng Stack Overflow cùng với bộ câu trả lời trong thời gian ngắn nhất có thể. Khóa luận tiến hành so sánh các phương pháp khác nhau để đưa ra phương pháp tối ưu nhất đảm bảo độ chính xác bộ câu hỏi đầu ra so với yêu cầu người dùng tìm kiếm.
 
-**3. Machine Learning Problem**
-
-We have to Build Search engine based on semantic meaning of content and display results in minimum time .
-
-For  more details on this project Read my blog on medium [here](https://sumittagadiya.medium.com/stack-overflow-search-engine-based-on-semantic-meaning-e69755cf7bef)
-
-**4 . Deployment on Heroku**
-
-you can find my search engine on Heroku [here](https://stackoverflow-semantic-search.herokuapp.com/)
 
 
 
