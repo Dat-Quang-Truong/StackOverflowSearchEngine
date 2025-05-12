@@ -112,47 +112,6 @@ with open('glove_vectors', 'rb') as f:
     glove_words = set(model.keys())
 
 
-######################################### deepseek generate answer ##################################################
-import requests
-import json
-
-# def generate_answer_from_dictt(dictt, user_question):
-    
-#     # Extract relevant answers
-#     related_answers = []
-#     for item in dictt["top_10"][:3]:
-#         answer_text = item["answers"][0]  # Get the highest-voted answer
-#         related_answers.append(answer_text)
-
-#     context = "\n###".join(related_answers)
-
-#     # Create a prompt for AI model
-#     prompt = f"""You are an AI assistant specializing in analyzing Stack Overflow answers.
-# The user asks: "{user_question}"
-
-# Here are some related answers:
-# {context}
-
-# Please summarize and provide only the most accurate, concise, and easy-to-understand answer in HTML format.
-# """
-
-#     print("prompt: ", prompt)
-#     url = "http://localhost:11434/api/generate"
-#     payload = {
-#         "model": "openchat",
-#         "prompt": prompt,
-#         "stream": True
-#     }
-
-#     with requests.post(url, json=payload, stream=True) as response:
-#         for line in response.iter_lines():
-#             if line:
-#                 try:
-#                     json_data = json.loads(line.decode("utf-8"))
-#                     yield json_data["response"]
-#                 except:
-#                     yield "[Error parsing response]"
-
 ######################################### route paths ##################################################
 
 
